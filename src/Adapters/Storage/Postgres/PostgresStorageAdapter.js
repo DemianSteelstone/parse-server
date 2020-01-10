@@ -592,11 +592,11 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       const distanceInKM = distance * 6371 * 1000;
       patterns.push(
         `ST_DWithin($${index}:name::geometry::geography, POINT($${index +
-          1}, $${index + 2})::geography, $${index + 3})`
+          1}, $${index + 2})::geometry::geography, $${index + 3})`
       );
       sorts.push(
         `ST_DWithin($${index}:name::geometry::geography, POINT($${index +
-          1}, $${index + 2})::geography, $${index + 3}) ASC`
+          1}, $${index + 2})::geometry::geography, $${index + 3}) ASC`
       );
       values.push(fieldName, point.longitude, point.latitude, distanceInKM);
       index += 4;
@@ -644,7 +644,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       const distanceInKM = distance * 6371 * 1000;
       patterns.push(
         `ST_DWithin($${index}:name::geometry::geography, POINT($${index +
-          1}, $${index + 2})::geography, $${index + 3})`
+          1}, $${index + 2})::geometry::geography, $${index + 3})`
       );
       values.push(fieldName, point.longitude, point.latitude, distanceInKM);
       index += 4;
