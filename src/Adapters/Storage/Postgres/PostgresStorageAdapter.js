@@ -609,9 +609,9 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       const right = box[1].longitude;
       const top = box[1].latitude;
 
-      patterns.push(`$${index}:name::point <@ $${index + 1}::box`);
-      values.push(fieldName, `((${left}, ${bottom}), (${right}, ${top}))`);
-      index += 2;
+      patterns.push(`$${index}:name::geometry && ST_MakeEnvelope($${index+1}, $${index+2}, $${index+3},$${index+4}, 4326)`);
+      values.push(fieldName, left, bottom, right, top);
+      index += 5;
     }
 
     if (fieldValue.$geoWithin && fieldValue.$geoWithin.$centerSphere) {
