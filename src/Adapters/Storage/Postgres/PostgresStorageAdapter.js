@@ -464,7 +464,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         } else if (!notIn) {
           console.log("Postgres :: isInOrNin !notIn");
           values.push(fieldName);
-          patterns.push(`$${index}:name IS NULL`);
+          patterns.push(`$${index}:name IS NOT NULL`);
           index = index + 1;
         } else {
           // Handle empty array
