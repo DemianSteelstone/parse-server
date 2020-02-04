@@ -283,17 +283,14 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       } else {
         if (fieldValue.$in) {
           const inPatterns = [];
-          values.push(fieldName);
+          values.push(name);
           fieldValue.$in.forEach((listElem, listIndex) => {
-            if (typeof listElem === 'string') {
-              values.push(`'${listElem}'`);
-            } else {
-              values.push(`${listElem}`);
-            }
-            inPatterns.push(`$${index + 1 + listIndex}`);
+            values.push(listElem);
+              inPatterns.push(`$${index + 1 + listIndex}`);
           });
           patterns.push(`($${index}):raw ?| ARRAY[${inPatterns.join()}]`);
           index = index + 1 + inPatterns.length;
+
         } else if (fieldValue.$regex) {
           // Handle later
         } else if (typeof fieldValue !== 'object') {
