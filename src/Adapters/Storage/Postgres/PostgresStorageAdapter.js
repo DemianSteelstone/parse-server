@@ -284,7 +284,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         if (fieldValue.$in) {
           name = transformDotFieldToComponents(fieldName).join('->');
           console.log("Postgres:: fieldValue.$in: " + fieldValue.$in);
-          patterns.push(`$${index} ?| ARRAY$${index + 1}`);
+          patterns.push(`$${index} ?| ARRAY[$${index + 1}]`);
           values.push(name, fieldValue.$in);
           index += 2;
         } else if (fieldValue.$regex) {
