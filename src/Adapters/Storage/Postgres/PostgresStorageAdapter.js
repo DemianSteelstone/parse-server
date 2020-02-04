@@ -292,7 +292,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
             }
           });
           let val = inArray.join();
-          patterns.push(`($${index}):raw ?| (array[$${index + 1}]):raw`);
+          patterns.push(`($${index}):raw ?| array['477168102821393'])`);
           values.push(name, val);
           index += 2;
           
