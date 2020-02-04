@@ -293,7 +293,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
             }
             inPatterns.push(`$${index + 1 + listIndex}`);
           });
-          patterns.push(`($${index}):raw ?| ARRAY[${inPatterns.join()}]`);
+          patterns.push(`($${index}:raw) ?| ARRAY[${inPatterns.join()}]`);
           index = index + 1 + inPatterns.length;
 
         } else if (fieldValue.$regex) {
