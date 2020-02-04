@@ -414,6 +414,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       const inPatterns = [];
       let allowNull = false;
       values.push(fieldName);
+      console.log("Postgres :: isInOrNin Values: " + fieldValue.$in);
       fieldValue.$in.forEach((listElem, listIndex) => {
         if (listElem === null) {
           allowNull = true;
@@ -422,6 +423,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           inPatterns.push(`$${index + 1 + listIndex - (allowNull ? 1 : 0)}`);
         }
       });
+      console.log("Postgres :: isInOrNin allowsNull: " + allowNull);
       if (allowNull) {
         patterns.push(
           `($${index}:name IS NULL OR $${index}:name && ARRAY[${inPatterns.join()}])`
@@ -453,7 +455,8 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
                 inPatterns.push(`$${index + 1 + listIndex}`);
               }
             });
-            patterns.push(`$${index}:name IS NOT NULL AND $${index}:name ${not} IN (${inPatterns.join()})`);
+            console.log("Postgres :: isInOrNin check");
+            patterns.push(`$${index}:name ${not} IN (${inPatterns.join()})`);
             index = index + 1 + inPatterns.length;
           }
         } else if (!notIn) {
