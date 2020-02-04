@@ -286,9 +286,9 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           let inArray = [];
           fieldValue.$in.forEach((listElem) => {
             if (typeof listElem === 'string') {
-              inPatterns.push(`'${listElem}'`);
+              inArray.push(`'${listElem}'`);
             } else {
-              inPatterns.push(`${listElem}`);
+              inArray.push(`${listElem}`);
             }
           });
           let val = inArray.join();
