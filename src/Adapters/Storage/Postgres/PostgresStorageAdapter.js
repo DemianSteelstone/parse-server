@@ -327,6 +327,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       values.push(fieldName, fieldValue);
       index += 2;
     } else if (['$or', '$nor', '$and'].includes(fieldName)) {
+      console.log("Postgres :: Field name: " + fieldName);
       const clauses = [];
       const clauseValues = [];
       fieldValue.forEach(subQuery => {
@@ -808,6 +809,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     }
   }
   values = values.map(transformValue);
+  console.log("Postgres :: Final pattern \n " + patterns.join(' AND ') + "\n Values \n" + values);
   return { pattern: patterns.join(' AND '), values, sorts };
 };
 
