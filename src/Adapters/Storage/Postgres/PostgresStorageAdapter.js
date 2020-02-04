@@ -283,9 +283,14 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       } else {
         if (fieldValue.$in) {
           name = transformDotFieldToComponents(fieldName).join('->');
-          patterns.push(`($${index}):raw ?| ARRAY[$${index+1})]`);
-          values.push(name, JSON.stringify(fieldValue.$in));
-          index += 2;
+          const inPatterns = [];
+          values.push(fieldName);
+          fieldValue.$in.forEach((listElem, listIndex) => {
+            values.push(listElem);
+              inPatterns.push(`$${index + 1 + listIndex}`);
+          });
+          patterns.push(`($${index}):raw ?| ARRAY[${inPatterns.join()}]`);
+          index = index + 1 + inPatterns.length;
         } else if (fieldValue.$regex) {
           // Handle later
         } else if (typeof fieldValue !== 'object') {
@@ -803,7 +808,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     }
   }
   values = values.map(transformValue);
-
+  console.log("Postgres :: Final pattern \n " + patterns.join(' AND '), +"\n Values \n" + values);
   return { pattern: patterns.join(' AND '), values, sorts };
 };
 
