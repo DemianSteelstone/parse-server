@@ -283,8 +283,8 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       } else {
         if (fieldValue.$in) {
           name = transformDotFieldToComponents(fieldName).join('->');
-          patterns.push(`$${index} ?| ARRAY[$${index + 1}]`);
-          values.push(name, fieldValue.$in);
+          patterns.push(`($${index}:raw)::jsonb @> $${index + 1}::jsonb`);
+          values.push(name, JSON.stringify(fieldValue.$in));
           index += 2;
           console.log("Postgres:: pattern: " + patterns);
           console.log("Postgres:: values: " + values);
