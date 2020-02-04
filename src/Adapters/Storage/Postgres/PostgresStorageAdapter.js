@@ -283,14 +283,9 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       } else {
         if (fieldValue.$in) {
           name = transformDotFieldToComponents(fieldName).join('->');
-          const inPatterns = [];
-          values.push(fieldName);
-          fieldValue.$in.forEach((listElem, listIndex) => {
-            values.push(listElem);
-              inPatterns.push(`$${index + 1 + listIndex}`);
-          });
-          patterns.push(`($${index}):raw ?| ARRAY[${inPatterns.join()}]`);
-          index = index + 1 + inPatterns.length;
+          patterns.push(`($${index}:raw)::jsonb @> $${index + 1}::jsonb`);
+          values.push(name, JSON.stringify(fieldValue.$in));
+          index += 2;
         } else if (fieldValue.$regex) {
           // Handle later
         } else if (typeof fieldValue !== 'object') {
