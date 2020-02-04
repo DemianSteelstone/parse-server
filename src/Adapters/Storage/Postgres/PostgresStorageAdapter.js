@@ -284,16 +284,20 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         if (fieldValue.$in) {
           name = transformDotFieldToComponents(fieldName).join('->');
           let inArray = [];
-          fieldValue.$in.forEach(listElem => {
-            inArray.push(`${listElem}`);
-          })
-
+          fieldValue.$in.forEach((listElem) => {
+            if (typeof listElem === 'string') {
+              inPatterns.push(`'${listElem}'`);
+            } else {
+              inPatterns.push(`${listElem}`);
+            }
+          });
+          let val = inArray.join();
           patterns.push(`($${index}):raw ?| ARRAY[$${index + 1}]`);
-          values.push(name, inArray.join());
+          values.push(name, val);
           index += 2;
           console.log("Postgres:: pattern: " + patterns);
           console.log("Postgres:: values: " + values);
-          console.log("Postgres res: "+ `($${name}):raw ?| ARRAY[$${inArray.join()}]`);
+          console.log("Postgres res: "+ `(${name}):raw ?| ARRAY[${val}]`);
         } else if (fieldValue.$regex) {
           // Handle later
         } else if (typeof fieldValue !== 'object') {
