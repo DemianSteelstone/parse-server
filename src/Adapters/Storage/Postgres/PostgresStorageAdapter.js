@@ -282,6 +282,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         patterns.push(`${name} IS NULL`);
       } else {
         if (fieldValue.$in) {
+          name = transformDotFieldToComponents(fieldName).join('->');
           const inPatterns = [];
           values.push(name);
           fieldValue.$in.forEach((listElem, listIndex) => {
