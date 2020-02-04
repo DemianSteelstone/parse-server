@@ -282,9 +282,17 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         patterns.push(`${name} IS NULL`);
       } else {
         if (fieldValue.$in) {
-          name = transformDotFieldToComponents(fieldName).join('->');
-          patterns.push(`($${index}:raw)::jsonb @> $${index + 1}::jsonb`);
-          values.push(name, JSON.stringify(fieldValue.$in));
+          let inArray = [];
+          fieldValue.$in.forEach((listElem) => {
+            if (typeof listElem === 'string') {
+              inArray.push(`'${listElem}'`);
+            } else {
+              inArray.push(`${listElem}`);
+            }
+          });
+          let val = inArray.join();
+          patterns.push(`($${index}):raw ?| ARRAY[$${index + 1}]`);
+          values.push(name, val);
           index += 2;
         } else if (fieldValue.$regex) {
           // Handle later
@@ -803,7 +811,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     }
   }
   values = values.map(transformValue);
-  console.log("Postgres :: Final pattern \n " + patterns.join(' AND '), +"\n Values \n" + values);
+  console.log("Postgres :: Final pattern \n " + patterns.join(' AND ') + "\n Values \n" + values);
   return { pattern: patterns.join(' AND '), values, sorts };
 };
 
