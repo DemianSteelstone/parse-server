@@ -291,7 +291,6 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           });
           patterns.push(`($${index}:raw) ?| ARRAY[${inPatterns.join()}]`);
           index = index + 1 + inPatterns.length;
-
         } else if (fieldValue.$regex) {
           // Handle later
         } else if (typeof fieldValue !== 'object') {
@@ -809,7 +808,6 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     }
   }
   values = values.map(transformValue);
-  console.log("Postgres :: Final pattern \n " + patterns.join(' AND ') + "\n Values \n" + values);
   return { pattern: patterns.join(' AND '), values, sorts };
 };
 
