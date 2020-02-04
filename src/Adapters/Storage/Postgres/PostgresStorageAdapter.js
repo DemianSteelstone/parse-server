@@ -279,6 +279,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     if (fieldName.indexOf('.') >= 0) {
       let name = transformDotField(fieldName);
       if (fieldValue === null) {
+        console.log("Postgres :: indexOf('.') && fieldValue === null");
         patterns.push(`${name} IS NULL`);
       } else {
         if (fieldValue.$in) {
@@ -389,6 +390,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     }
     if (fieldValue.$eq !== undefined) {
       if (fieldValue.$eq === null) {
+        console.log("Postgres :: $eq === null");
         patterns.push(`$${index}:name IS NULL`);
         values.push(fieldName);
         index += 1;
@@ -414,7 +416,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       const inPatterns = [];
       let allowNull = false;
       values.push(fieldName);
-      console.log("Postgres :: isInOrNin Values: " + fieldValue.$in);
+      console.log("Postgres :: isInOrNin Field: " +fieldName + " Values: " + fieldValue.$in);
       fieldValue.$in.forEach((listElem, listIndex) => {
         if (listElem === null) {
           allowNull = true;
@@ -460,6 +462,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
             index = index + 1 + inPatterns.length;
           }
         } else if (!notIn) {
+          console.log("Postgres :: isInOrNin !notIn");
           values.push(fieldName);
           patterns.push(`$${index}:name IS NULL`);
           index = index + 1;
@@ -519,6 +522,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       if (fieldValue.$exists) {
         patterns.push(`$${index}:name IS NOT NULL`);
       } else {
+        console.log("Postgres :: !$exists");
         patterns.push(`$${index}:name IS NULL`);
       }
       values.push(fieldName);
