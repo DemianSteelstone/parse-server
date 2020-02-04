@@ -292,10 +292,11 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
             }
           });
           let val = inArray.join();
-          patterns.push(`($${index}):raw ?| array['477168102821393'])`);
+          patterns.push(`($${index}):raw ?| ARRAY[$${index+1})]`);
           values.push(name, val);
           index += 2;
-          
+          console.log("Postgres :: val: "+ val);
+          console.log("Postgres :: arr: "+ inArray);
           console.log("Postgres :: res: "+ `${name} ?| array[${val}]`);
         } else if (fieldValue.$regex) {
           // Handle later
