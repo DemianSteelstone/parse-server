@@ -292,7 +292,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
             }
           });
           let val = inArray.join();
-          patterns.push(`($${index}):raw ?| ARRAY[$${index + 1}]`);
+          patterns.push(`$${index} ?| ARRAY[$${index + 1}]`);
           values.push(name, val);
           index += 2;
           console.log("Postgres:: pattern: " + patterns);
