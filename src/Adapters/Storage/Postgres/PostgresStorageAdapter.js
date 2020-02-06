@@ -451,7 +451,12 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
                 inPatterns.push(`$${index + 1 + listIndex}`);
               }
             });
-            patterns.push(`$${index}:name ${not} IN (${inPatterns.join()})`);
+
+            var pattern = `$${index}:name ${not} IN (${inPatterns.join()})`;
+            if (notIn) {
+              pattern = '(' + pattern + ` OR $${index}:name IS NULL )`;
+            } 
+            patterns.push(pattern);
             index = index + 1 + inPatterns.length;
           }
         } else {
