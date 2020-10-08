@@ -12,7 +12,7 @@ function validateAuthData(authData, params) {
     if (response && response.access_token) {
       return request(
         'api.vk.com',
-        'method/users.get?access_token=' + authData.access_token + '&v=5.8'
+        'method/users.get?access_token=' + authData.access_token + '&v=5.124'
       ).then(function(response) {
         if (
           response &&
