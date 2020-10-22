@@ -13,6 +13,7 @@ const digits = require("./twitter"); // digits tokens are validated by twitter
 const janrainengage = require("./janrainengage");
 const janraincapture = require("./janraincapture");
 const vkontakte = require("./vkontakte");
+const apple = require("./apple");
 const qq = require("./qq");
 const wechat = require("./wechat");
 const weibo = require("./weibo");
@@ -43,7 +44,8 @@ const providers = {
   vkontakte,
   qq,
   wechat,
-  weibo
+  weibo,
+  apple
 }
 function authDataValidator(adapter, appIds, options) {
   return function(authData) {
