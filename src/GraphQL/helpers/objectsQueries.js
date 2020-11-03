@@ -3,6 +3,37 @@ import { offsetToCursor, cursorToOffset } from 'graphql-relay';
 import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';
 
+// Eslint/Prettier conflict
+/* eslint-disable*/
+const needToGetAllKeys = (fields, keys, parseClasses) =>
+  keys
+    ? keys.split(',').some(keyName => {
+        const key = keyName.split('.');
+        if (fields[key[0]]) {
+          if (fields[key[0]].type === 'Pointer') {
+            const subClass = parseClasses.find(
+              ({ className: parseClassName }) =>
+                fields[key[0]].targetClass === parseClassName
+            );
+            if (subClass && subClass.fields[key[1]]) {
+              // Current sub key is not custom
+              return false;
+            }
+          } else if (
+            !key[1] ||
+            fields[key[0]].type === 'Array' ||
+            fields[key[0]].type === 'Object'
+          ) {
+            // current key is not custom
+            return false;
+          }
+        }
+        // Key not found into Parse Schema so it's custom
+        return true;
+      })
+    : true;
+/* eslint-enable*/
+
 const getObject = async (
   className,
   objectId,
@@ -12,11 +43,24 @@ const getObject = async (
   includeReadPreference,
   config,
   auth,
-  info
+  info,
+  parseClasses
 ) => {
   const options = {};
-  if (keys) {
-    options.keys = keys;
+  try {
+    if (
+      !needToGetAllKeys(
+        parseClasses.find(
+          ({ className: parseClassName }) => className === parseClassName
+        ).fields,
+        keys,
+        parseClasses
+      )
+    ) {
+      options.keys = keys;
+    }
+  } catch (e) {
+    console.log(e);
   }
   if (include) {
     options.include = include;
@@ -34,7 +78,8 @@ const getObject = async (
     className,
     objectId,
     options,
-    info.clientSDK
+    info.clientSDK,
+    info.context
   );
 
   if (!response.results || response.results.length == 0) {
@@ -102,7 +147,8 @@ const findObjects = async (
         className,
         where,
         preCountOptions,
-        info.clientSDK
+        info.clientSDK,
+        info.context
       )
     ).count;
     if ((skip || 0) + limit < preCount) {
@@ -133,7 +179,15 @@ const findObjects = async (
         // Silently replace the limit on the query with the max configured
         options.limit = config.maxLimit;
       }
-      if (keys) {
+      if (
+        !needToGetAllKeys(
+          parseClasses.find(
+            ({ className: parseClassName }) => className === parseClassName
+          ).fields,
+          keys,
+          parseClasses
+        )
+      ) {
         options.keys = keys;
       }
       if (includeAll === true) {
@@ -174,7 +228,8 @@ const findObjects = async (
       className,
       where,
       options,
-      info.clientSDK
+      info.clientSDK,
+      info.context
     );
     results = findResult.results;
     count = findResult.count;
@@ -313,4 +368,4 @@ const calculateSkipAndLimit = (
   };
 };
 
-export { getObject, findObjects, calculateSkipAndLimit };
+export { getObject, findObjects, calculateSkipAndLimit, needToGetAllKeys };

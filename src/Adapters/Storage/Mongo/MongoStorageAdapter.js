@@ -279,7 +279,12 @@ export class MongoStorageAdapter implements StorageAdapter {
         delete existingIndexes[name];
       } else {
         Object.keys(field).forEach(key => {
-          if (!Object.prototype.hasOwnProperty.call(fields, key)) {
+          if (
+            !Object.prototype.hasOwnProperty.call(
+              fields,
+              key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
+            )
+          ) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
@@ -433,6 +438,11 @@ export class MongoStorageAdapter implements StorageAdapter {
       collectionUpdate['$unset'][name] = null;
     });
 
+    const collectionFilter = { $or: [] };
+    mongoFormatNames.forEach(name => {
+      collectionFilter['$or'].push({ [name]: { $exists: true } });
+    });
+
     const schemaUpdate = { $unset: {} };
     fieldNames.forEach(name => {
       schemaUpdate['$unset'][name] = null;
@@ -440,7 +450,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     });
 
     return this._adaptiveCollection(className)
-      .then(collection => collection.updateMany({}, collectionUpdate))
+      .then(collection =>
+        collection.updateMany(collectionFilter, collectionUpdate)
+      )
       .then(() => this._schemaCollection())
       .then(schemaCollection =>
         schemaCollection.updateSchema(className, schemaUpdate)
@@ -620,7 +632,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, readPreference }: QueryOptions
+    {
+      skip,
+      limit,
+      sort,
+      keys,
+      readPreference,
+      hint,
+      caseInsensitive,
+      explain,
+    }: QueryOptions
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
@@ -641,6 +662,13 @@ export class MongoStorageAdapter implements StorageAdapter {
       {}
     );
 
+    // If we aren't requesting the `_id` field, we need to explicitly opt out
+    // of it. Doing so in parse-server is unusual, but it can allow us to
+    // optimize some queries with covering indexes.
+    if (keys && !mongoKeys._id) {
+      mongoKeys._id = 0;
+    }
+
     readPreference = this._parseReadPreference(readPreference);
     return this.createTextIndexesIfNeeded(className, query, schema)
       .then(() => this._adaptiveCollection(className))
@@ -652,12 +680,64 @@ export class MongoStorageAdapter implements StorageAdapter {
           keys: mongoKeys,
           maxTimeMS: this._maxTimeMS,
           readPreference,
+          hint,
+          caseInsensitive,
+          explain,
         })
       )
-      .then(objects =>
-        objects.map(object =>
+      .then(objects => {
+        if (explain) {
+          return objects;
+        }
+        return objects.map(object =>
           mongoObjectToParseObject(className, object, schema)
-        )
+        );
+      })
+      .catch(err => this.handleError(err));
+  }
+
+  ensureIndex(
+    className: string,
+    schema: SchemaType,
+    fieldNames: string[],
+    indexName: ?string,
+    caseInsensitive: boolean = false,
+    options?: Object = {}
+  ): Promise<any> {
+    schema = convertParseSchemaToMongoSchema(schema);
+    const indexCreationRequest = {};
+    const mongoFieldNames = fieldNames.map(fieldName =>
+      transformKey(className, fieldName, schema)
+    );
+    mongoFieldNames.forEach(fieldName => {
+      indexCreationRequest[fieldName] =
+        options.indexType !== undefined ? options.indexType : 1;
+    });
+
+    const defaultOptions: Object = { background: true, sparse: true };
+    const indexNameOptions: Object = indexName ? { name: indexName } : {};
+    const ttlOptions: Object =
+      options.ttl !== undefined ? { expireAfterSeconds: options.ttl } : {};
+    const caseInsensitiveOptions: Object = caseInsensitive
+      ? { collation: MongoCollection.caseInsensitiveCollation() }
+      : {};
+    const indexOptions: Object = {
+      ...defaultOptions,
+      ...caseInsensitiveOptions,
+      ...indexNameOptions,
+      ...ttlOptions,
+    };
+
+    return this._adaptiveCollection(className)
+      .then(
+        collection =>
+          new Promise((resolve, reject) =>
+            collection._mongoCollection.createIndex(
+              indexCreationRequest,
+              indexOptions,
+              error => (error ? reject(error) : resolve())
+            )
+          )
       )
       .catch(err => this.handleError(err));
   }
@@ -712,7 +792,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     readPreference = this._parseReadPreference(readPreference);
@@ -721,6 +802,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.count(transformWhere(className, query, schema, true), {
           maxTimeMS: this._maxTimeMS,
           readPreference,
+          hint,
         })
       )
       .catch(err => this.handleError(err));
@@ -760,7 +842,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: any,
     pipeline: any,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed,
+    explain?: boolean
   ) {
     let isPointerField = false;
     pipeline = pipeline.map(stage => {
@@ -783,6 +867,12 @@ export class MongoStorageAdapter implements StorageAdapter {
           stage.$project
         );
       }
+      if (stage.$geoNear && stage.$geoNear.query) {
+        stage.$geoNear.query = this._parseAggregateArgs(
+          schema,
+          stage.$geoNear.query
+        );
+      }
       return stage;
     });
     readPreference = this._parseReadPreference(readPreference);
@@ -791,6 +881,8 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.aggregate(pipeline, {
           readPreference,
           maxTimeMS: this._maxTimeMS,
+          hint,
+          explain,
         })
       )
       .then(results => {
